@@ -11,6 +11,9 @@ Ce simulateur permet d'évaluer si un projet d’ombrière peut être exonéré 
 
 st.header("🔢 Paramètres à renseigner")
 
+# Nouveau champ texte pour nom du site
+nom_site = st.text_input("Nom du site", value="")
+
 # Inputs avec annotations et cases à cocher
 checkbox_states = []
 
@@ -46,8 +49,11 @@ production_annuelle = champ_avec_checkbox("Production annuelle estimée (kWh)", 
 prix_kwh = champ_avec_checkbox("Prix de vente ou autoconsommation du kWh (€)", 0.10)
 aides_total = champ_avec_checkbox("Montant total des aides ou subventions (€)", 0.0)
 
-# Affichage des résultats seulement si toutes les cases sont cochées
-if all(checkbox_states):
+if not nom_site.strip():
+    st.warning("Veuillez renseigner le nom du site pour continuer.")
+elif not all(checkbox_states):
+    st.warning("Veuillez cocher toutes les cases 'Donnée vérifiée' pour afficher les résultats.")
+else:
     # Calculs
     r = taux_actualisation / 100
     revenus_actualises = sum((production_annuelle * prix_kwh) / ((1 + r) ** t) for t in range(1, duree + 1))
@@ -70,7 +76,7 @@ if all(checkbox_states):
     st.markdown("💡 **Conseil :** Si le CNA dépasse le seuil d’exonération, vous pouvez inclure ces résultats dans votre dossier préfectoral pour justifier l’exemption.")
 
     # PDF Export
-    def generate_pdf(donnees, resultats):
+    def generate_pdf(donnees, resultats, nom_site_pdf):
         def clean(text):
             return str(text).replace("’", "'").replace("–", "-").replace("€", "EUR").replace("✅", "OUI").replace("❌", "NON").replace("Σ", "Somme")
 
@@ -83,41 +89,45 @@ if all(checkbox_states):
         pdf.add_page()
         pdf.set_font("Arial", 'B', 16)
         pdf.cell(0, 10, "Synthese du projet - Simulateur d'exoneration", ln=True, align='C')
+        pdf.ln(8)
+        pdf.set_font("Arial", 'I', 14)
+        pdf.cell(0, 10, f"Site : {nom_site_pdf}", ln=True, align='C')
         pdf.ln(10)
+
         pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, "1. Donnees renseignees :", ln=True)
+        pdf.cell(0, 10, "1. Données renseignées :", ln=True)
         pdf.set_font("Arial", '', 11)
         for k, v in donnees_clean.items():
             pdf.cell(0, 8, f"- {k} : {v}", ln=True)
 
         pdf.ln(5)
         pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, "2. Resultats calcules :", ln=True)
+        pdf.cell(0, 10, "2. Résultats calculés :", ln=True)
         pdf.set_font("Arial", '', 11)
         for k, v in resultats_clean.items():
             pdf.cell(0, 8, f"- {k} : {v}", ln=True)
 
         pdf.add_page()
         pdf.set_font("Arial", 'B', 14)
-        pdf.cell(0, 10, "Methodologie de calcul", ln=True, align='C')
+        pdf.cell(0, 10, "Méthodologie de calcul", ln=True, align='C')
         pdf.ln(8)
         pdf.set_font("Arial", '', 11)
         pdf.multi_cell(0, 8, clean("""
-Cette page detaille les formules utilisees dans le calcul du Cout Net Actualise (CNA) et les criteres d'exoneration.
+Cette page détaille les formules utilisées dans le calcul du Cout Net Actualisé (CNA) et les critères d'exoneration.
 
-1. Revenus actualises = Somme sur la duree :
+1. Revenus actualisés = Somme sur la durée :
    (Production annuelle × Prix du kWh) / (1 + taux)^t + aides
 
-2. Couts actualises = Cout initial + Somme des maintenances actualisees + Recyclage actualise :
-   CAPEX + Somme (maintenance / (1 + taux)^t) + (recyclage / (1 + taux)^duree)
+2. Coûts actualisés = Coût initial + Somme des maintenances actualisées + Recyclage actualisé :
+   CAPEX + Somme (maintenance / (1 + taux)^t) + (recyclage / (1 + taux)^durée)
 
-3. CNA = Couts actualises - Revenus actualises
+3. CNA = Coûts actualisés - Revenus actualisés
 
 4. Seuil d'exoneration = Valeur venale du parking × seuil %
 
-5. Exoneration accordee si CNA > Seuil
+5. Exoneration accordée si CNA > Seuil
 
-Sources legales : Loi APER, decret d'application sur les ombrieres photovoltaiques, articles du Code de l'urbanisme (R111-24 et suivants).
+Sources légales : Loi APER, décret d'application sur les ombrières photovoltaïques, articles du Code de l'urbanisme (R111-24 et suivants).
 """))
 
         output_path = "simulation_exoneration.pdf"
@@ -147,7 +157,7 @@ Sources legales : Loi APER, decret d'application sur les ombrieres photovoltaiqu
         "Exonération possible ?": exonere
     }
 
-    chemin_pdf = generate_pdf(donnees_pdf, resultats_pdf)
+    chemin_pdf = generate_pdf(donnees_pdf, resultats_pdf, nom_site)
     with open(chemin_pdf, "rb") as file:
         st.download_button(
             label="📥 Télécharger le PDF",
@@ -155,5 +165,3 @@ Sources legales : Loi APER, decret d'application sur les ombrieres photovoltaiqu
             file_name="simulation_exoneration.pdf",
             mime="application/pdf"
         )
-else:
-    st.warning("Veuillez cocher toutes les cases 'Donnée vérifiée' pour afficher les résultats.")
