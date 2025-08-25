@@ -46,7 +46,7 @@ seuil_exoneration_pourcent = curseur_avec_checkbox("Seuil d’exonération (%)",
 cout_maintenance_annuel = champ_avec_checkbox("Coûts de maintenance annuels (€)", 3000.0)
 cout_recyclage = champ_avec_checkbox("Coût total de démantèlement/recyclage (€)", 20000.0)
 production_annuelle = champ_avec_checkbox("Production annuelle estimée (kWh)", 180000.0)
-prix_kwh = champ_avec_checkbox("Prix de vente ou autoconsommation du kWh (€)", 0.10)
+prix_kwh = champ_avec_checkbox("Prix de vente ou autoconsommation du kWh (€)", 0.08)
 aides_total = champ_avec_checkbox("Montant total des aides ou subventions (€)", 0.0)
 
 if not nom_site.strip():
